@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no,maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Finance">
+<meta name="theme-color" content="#f7f7f7">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<title>Finance Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:#f7f7f7;font-family:'Nunito',sans-serif;-webkit-font-smoothing:antialiased;overscroll-behavior:none}
+@keyframes modalUp{from{transform:translateY(50px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+@keyframes countUp{from{opacity:0;transform:scale(0.8) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}
+@keyframes confetti-0{to{transform:translate(40px,-180px) rotate(400deg);opacity:0}}
+@keyframes confetti-1{to{transform:translate(-50px,-200px) rotate(-350deg);opacity:0}}
+@keyframes confetti-2{to{transform:translate(30px,-150px) rotate(300deg);opacity:0}}
+@keyframes confetti-3{to{transform:translate(-40px,-170px) rotate(-280deg);opacity:0}}
+input{font-family:'DM Mono',monospace}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<script type="text/babel">
+const {useState,useEffect,useCallback,useRef} = React;
+
+/* ─── icons as SVG ─── */
+function Ic({d,size=20,color="#000",sw=2}){return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round"><path d={d}/></svg>}
+const Icons = {
+  home:(p)=><Ic d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 22V12h6v10" {...p}/>,
+  pen:(p)=><Ic d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" {...p}/>,
+  cal:(p)=><Ic d="M8 2v4 M16 2v4 M3 10h18 M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z" {...p}/>,
+  gear:(p)=><Ic d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z" {...p}/>,
+  trend:(p)=><Ic d="M22 7 13.5 15.5 8.5 10.5 2 17" {...p}/>,
+  shield:(p)=><Ic d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" {...p}/>,
+  piggy:(p)=><Ic d="M19 5c-1.5 0-2.8 1.4-3 2-3.5-1.5-11-.3-11 5 0 1.8 0 3 2 4.5V20h4v-2h3v2h4v-4c1-.5 1.7-1 2-2h2v-4h-2c0-1-.5-1.5-1-2" {...p}/>,
+  card:(p)=><Ic d="M2 5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5z M2 10h20" {...p}/>,
+  car:(p)=><Ic d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9L18 10l-3-5H7L4 10l-2.5 1.1C.7 11.3 0 12.1 0 13v3c0 .6.4 1 1 1h2 M7 17a2 2 0 1 0 4 0 2 2 0 0 0-4 0z M15 17a2 2 0 1 0 4 0 2 2 0 0 0-4 0z" {...p}/>,
+  dollar:(p)=><Ic d="M12 2v20 M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" {...p}/>,
+  target:(p)=><Ic d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z M12 6a6 6 0 1 0 0 12 6 6 0 0 0 0-12z M12 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4z" {...p}/>,
+  party:(p)=><Ic d="M5.8 11.3 2 22l10.7-3.8 M4 3h.01 M22 8h.01 M15 2h.01 M22 20h.01 M22 2l-2.24.75a2.9 2.9 0 0 0-1.96 3.12c.1.86-.57 1.63-1.45 1.63h-.38c-.86 0-1.6.6-1.76 1.44L14 10" {...p}/>,
+  x:(p)=><Ic d="M18 6 6 18 M6 6l12 12" {...p}/>,
+  sparkle:(p)=><Ic d="M12 3l1.5 5.5L19 10l-5.5 1.5L12 17l-1.5-5.5L5 10l5.5-1.5L12 3z" {...p}/>,
+};
+
+/* ─── helpers ─── */
+var fmt=function(n){return new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",minimumFractionDigits:2}).format(n)};
+var fmtShort=function(n){return n>=1000?"$"+(n/1000).toFixed(1)+"k":fmt(n)};
+var pct=function(c,g){return Math.min(Math.max((c/g)*100,0),100)};
+var MONTHS=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+var DAYS=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+var today=new Date();
+
+function getNthFriday(y,m,n){var c=0;for(var d=1;d<=31;d++){var dt=new Date(y,m,d);if(dt.getMonth()!==m)break;if(dt.getDay()===5){c++;if(c===n)return dt;}}return null;}
+function getLastFriday(y,m){var l=new Date(y,m+1,0);while(l.getDay()!==5)l.setDate(l.getDate()-1);return l;}
+function getPaydays(y,m){return[getNthFriday(y,m,2),getLastFriday(y,m)].filter(Boolean);}
+function daysUntil(ds){var t=new Date();t.setHours(0,0,0,0);var d=new Date(ds);d.setHours(0,0,0,0);return Math.ceil((d-t)/86400000);}
+
+var DEFAULT={
+  income:3744.20, perCheck:{roth:312.50,hysa:750},
+  rothBalance:0, rothGoal:7500, hysaBalance:6197.39, hysaGoal:25000, spendingBudget:500,
+  carLoan:{balance:15648.73,rate:13.29},
+  creditCards:[{id:"sav",name:"Savor",balance:5854.65},{id:"ven",name:"Venture",balance:1056.13},{id:"blu",name:"Blue Amex",balance:566.13},{id:"blk",name:"Black Amex",balance:1406.94}],
+  essentials:[{id:"car",name:"Ally Car Payment",amount:541.81,dueDay:1},{id:"sto",name:"Public Storage",amount:182.00,dueDay:1},{id:"ins",name:"Progressive Insurance",amount:138.85,dueDay:1},{id:"pet",name:"Lemonade Pet Insurance",amount:89.78,dueDay:1}],
+  subscriptions:[{name:"iZotope / NI",amount:20.00,dueDay:3},{name:"Splice",amount:13.68,dueDay:10},{name:"Dropbox",amount:11.99,dueDay:11},{name:"Amazon Prime",amount:14.99,dueDay:14},{name:"GoDaddy",amount:10.38,dueDay:21},{name:"Apple iCloud",amount:9.99,dueDay:21},{name:"Waves Plugins",amount:24.99,dueDay:22},{name:"Plugin Alliance",amount:24.99,dueDay:23},{name:"ProTools",amount:34.99,dueDay:28}],
+  transactions:[], paidEssentials:[], paidSubs:[],
+  monthKey:today.getFullYear()+"-"+today.getMonth(),
+  goalAmount:500000, goalAge:30, currentAge:23.9,
+  brokerageBalance:0, brokerageGoal:420000,
+  rothYearContributions:0, yearKey:today.getFullYear(),
+};
+
+/* ─── storage ─── */
+function loadData(){
+  try{var raw=localStorage.getItem("finance-data");
+    if(raw){var p=JSON.parse(raw);var ck=today.getFullYear()+"-"+today.getMonth();var cy=today.getFullYear();
+      if(p.yearKey!==cy){p.rothYearContributions=0;p.yearKey=cy;}
+      if(p.monthKey!==ck){p.paidEssentials=[];p.paidSubs=[];p.transactions=(p.transactions||[]).filter(function(t){var d=new Date(t.date);return d.getFullYear()===today.getFullYear()&&d.getMonth()===today.getMonth();});p.monthKey=ck;}
+      var merged={};for(var k in DEFAULT)merged[k]=DEFAULT[k];for(var k in p)merged[k]=p[k];return merged;
+    }
+  }catch(e){}return DEFAULT;
+}
+function saveData(d){try{localStorage.setItem("finance-data",JSON.stringify(d));}catch(e){}}
+
+function scheduleNotifications(ess,subs){
+  try{
+    if(!('serviceWorker' in navigator)||!navigator.serviceWorker.controller)return;
+    if(!('Notification' in window)||Notification.permission!=='granted')return;
+    var now=new Date();var bills=[];
+    function addBill(name,amount,dueDay){var dd=new Date(now.getFullYear(),now.getMonth(),dueDay);if(dd<now)dd.setMonth(dd.getMonth()+1);bills.push({name:name,amount:"$"+amount.toFixed(2),dueTimestamp:dd.getTime()});}
+    ess.forEach(function(e){addBill(e.name,e.amount,e.dueDay);});
+    subs.forEach(function(s){addBill(s.name,s.amount,s.dueDay||1);});
+    navigator.serviceWorker.controller.postMessage({type:'SCHEDULE_NOTIFICATIONS',bills:bills});
+  }catch(e){}
+}
+
+/* ─── components ─── */
+function Celebration(props){
+  var show=props.show,onDone=props.onDone;
+  var ref=useRef([]);var _=useState(0);var tick=_[1];
+  useEffect(function(){
+    if(!show)return;
+    var colors=["#58cc02","#ce82ff","#ff9600","#00cd9c","#ff4b4b","#1cb0f6","#ffc800"];
+    ref.current=Array.from({length:24},function(_,i){return{id:i,x:50+(Math.random()-0.5)*80,y:50,r:4+Math.random()*6,color:colors[i%colors.length],mod:i%4};});
+    tick(function(n){return n+1;});
+    var t=setTimeout(function(){ref.current=[];tick(function(n){return n+1;});onDone();},1400);
+    return function(){clearTimeout(t);};
+  },[show]);
+  if(!ref.current.length)return null;
+  return <div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:200}}>
+    {ref.current.map(function(p){return <div key={p.id} style={{position:"absolute",left:p.x+"%",top:p.y+"%",width:p.r*2,height:p.r*2,borderRadius:p.r,background:p.color,animation:"confetti-"+p.mod+" 1.2s cubic-bezier(.2,.8,.3,1) forwards"}}/>})}
+  </div>;
+}
+
+function Card(props){
+  var bg=props.bg||"#fff",bc=props.borderColor||"#e5e7eb",sh=props.shadow||"#d1d5db",onClick=props.onClick,style=props.style||{};
+  var ps=useState(false),pressed=ps[0],setP=ps[1];
+  return <div onClick={onClick} onPointerDown={function(){setP(true)}} onPointerUp={function(){setP(false)}} onPointerLeave={function(){setP(false)}}
+    style={Object.assign({background:bg,borderRadius:16,padding:"18px 20px",border:"2px solid "+bc,borderBottom:"4px solid "+sh,cursor:onClick?"pointer":"default",transform:pressed&&onClick?"scale(0.97) translateY(2px)":"scale(1) translateY(0)",transition:"transform 0.12s ease"},style)}>
+    {props.children}
+  </div>;
+}
+
+function ChunkyBar(props){
+  var value=props.value,max=props.max,color=props.color,bg=props.bg||"#e8e8e8",h=props.h||16;
+  var p=pct(value,max);
+  return <div style={{height:h,borderRadius:h,background:bg,overflow:"hidden",width:"100%",position:"relative",border:"1px solid rgba(0,0,0,0.06)"}}>
+    <div style={{height:"100%",borderRadius:h,width:p+"%",background:color,transition:"width 0.8s cubic-bezier(.4,0,.2,1)",position:"relative",overflow:"hidden"}}>
+      <div style={{position:"absolute",top:0,left:0,right:0,height:"45%",background:"linear-gradient(180deg,rgba(255,255,255,0.35) 0%,rgba(255,255,255,0) 100%)",borderRadius:h+"px "+h+"px 0 0"}}/>
+      {p>3&&<div style={{position:"absolute",right:2,top:"50%",transform:"translateY(-50%)",width:h-4,height:h-4,borderRadius:"50%",background:"rgba(255,255,255,0.4)",animation:p<100?"pulse 2s ease infinite":"none"}}/>}
+    </div>
+  </div>;
+}
+
+function StatCard(props){
+  var icon=props.icon,iconBg=props.iconBg,label=props.label,current=props.current,goal=props.goal,color=props.color,barBg=props.barBg,sub=props.sub,onClick=props.onClick,bc=props.borderColor,sh=props.shadow;
+  return <Card borderColor={bc||"#e5e7eb"} shadow={sh||"#d1d5db"} onClick={onClick}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+      <div style={{display:"flex",alignItems:"center",gap:10}}>
+        <div style={{width:36,height:36,borderRadius:10,background:iconBg,display:"flex",alignItems:"center",justifyContent:"center"}}>{icon}</div>
+        <span style={{fontSize:14,fontWeight:800,color:"#3c3c3c"}}>{label}</span>
+      </div>
+      <span style={{fontSize:13,fontFamily:"'DM Mono',monospace",fontWeight:700,color:"#afafaf"}}>{pct(current,goal).toFixed(0)}%</span>
+    </div>
+    <ChunkyBar value={current} max={goal} color={color} bg={barBg}/>
+    <div style={{display:"flex",justifyContent:"space-between",marginTop:8}}>
+      <span style={{fontSize:16,fontWeight:900,fontFamily:"'DM Mono',monospace",color:"#3c3c3c"}}>{fmt(current)}</span>
+      <span style={{fontSize:12,fontFamily:"'DM Mono',monospace",color:"#c4c4c4",fontWeight:600}}>{fmt(goal)}</span>
+    </div>
+    {sub&&<div style={{fontSize:11,color:"#afafaf",marginTop:4,fontWeight:600}}>{sub}</div>}
+  </Card>;
+}
+
+function DebtCard(props){
+  var icon=props.icon,iconBg=props.iconBg,label=props.label,balance=props.balance,extra=props.extra,color=props.color,onClick=props.onClick,bc=props.borderColor,sh=props.shadow;
+  return <Card borderColor={bc} shadow={sh} onClick={onClick}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+      <div style={{display:"flex",alignItems:"center",gap:10}}>
+        <div style={{width:36,height:36,borderRadius:10,background:iconBg,display:"flex",alignItems:"center",justifyContent:"center"}}>{icon}</div>
+        <span style={{fontSize:14,fontWeight:800,color:"#3c3c3c"}}>{label}</span>
+      </div>
+      <span style={{fontSize:18,fontWeight:900,fontFamily:"'DM Mono',monospace",color:color}}>{fmt(balance)}</span>
+    </div>
+    {extra&&<div style={{fontSize:11,color:"#afafaf",marginTop:6,fontWeight:600,marginLeft:46}}>{extra}</div>}
+  </Card>;
+}
+
+function BillRow(props){
+  var name=props.name,amount=props.amount,dueDay=props.dueDay,paid=props.paid,onToggle=props.onToggle,onDelete=props.onDelete;
+  var ps=useState(false),pressed=ps[0],setP=ps[1];
+  var dueDate=new Date(today.getFullYear(),today.getMonth(),dueDay);
+  if(dueDate<today&&!paid)dueDate.setMonth(dueDate.getMonth()+1);
+  var days=daysUntil(dueDate.toISOString());
+  var urgent=days<=3&&!paid;
+  return <div style={{display:"flex",alignItems:"center",padding:"12px 14px",borderRadius:14,background:paid?"#e6f9ed":urgent?"#fff3e0":"#f7f7f7",marginBottom:6,border:paid?"2px solid #b8e6c8":urgent?"2px solid #ffd9a0":"2px solid #ebebeb",borderBottom:paid?"4px solid #8fd4a4":urgent?"4px solid #f0b866":"4px solid #dcdcdc",transform:pressed?"scale(0.97) translateY(1px)":"none",transition:"transform 0.1s ease"}} onPointerDown={function(){setP(true)}} onPointerUp={function(){setP(false)}} onPointerLeave={function(){setP(false)}}>
+    <div onClick={onToggle} style={{display:"flex",alignItems:"center",gap:10,flex:1,cursor:"pointer"}}>
+      <div style={{width:26,height:26,borderRadius:8,background:paid?"#58cc02":"transparent",border:paid?"2px solid #46a302":"3px solid #d1d5db",borderBottom:paid?"3px solid #46a302":"4px solid #bbb",display:"flex",alignItems:"center",justifyContent:"center",transition:"all 0.2s ease"}}>
+        {paid&&<span style={{color:"#fff",fontSize:15,fontWeight:900}}>✓</span>}
+      </div>
+      <div>
+        <div style={{fontSize:13,fontWeight:700,color:paid?"#afafaf":"#3c3c3c",textDecoration:paid?"line-through":"none"}}>{name}</div>
+        {!paid&&<div style={{fontSize:10,color:urgent?"#ff9600":"#afafaf",fontWeight:urgent?800:600}}>{days===0?"Due today!":days===1?"Due tomorrow":"Due in "+days+" days"}</div>}
+      </div>
+    </div>
+    <div style={{display:"flex",alignItems:"center",gap:8}}>
+      <span style={{fontSize:14,fontWeight:800,fontFamily:"'DM Mono',monospace",color:paid?"#afafaf":"#3c3c3c"}}>{fmt(amount)}</span>
+      {onDelete&&<div onClick={function(e){e.stopPropagation();onDelete();}} style={{width:20,height:20,borderRadius:6,background:"#fff0f0",border:"2px solid #fecaca",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}>
+        <Icons.x size={10} color="#ef4444" sw={3}/>
+      </div>}
+    </div>
+  </div>;
+}
+
+function Modal(props){
+  return <div onClick={props.onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.35)",backdropFilter:"blur(10px)",WebkitBackdropFilter:"blur(10px)",display:"flex",alignItems:"flex-end",justifyContent:"center",zIndex:100,padding:12}}>
+    <div onClick={function(e){e.stopPropagation()}} style={{background:"#fff",borderRadius:24,padding:"28px 24px",width:"100%",maxWidth:400,marginBottom:16,border:"2px solid #e5e7eb",borderBottom:"4px solid #d1d5db",boxShadow:"0 20px 50px rgba(0,0,0,0.15)",animation:"modalUp 0.35s cubic-bezier(.2,.8,.3,1)"}}>{props.children}</div>
+  </div>;
+}
+
+function FormInput(props){
+  var label=props.label,value=props.value,onChange=props.onChange,type=props.type||"text",placeholder=props.placeholder;
+  var fs=useState(false),focused=fs[0],setF=fs[1];
+  return <div style={{marginBottom:14}}>
+    <label style={{display:"block",fontSize:11,fontWeight:800,color:"#afafaf",marginBottom:6,letterSpacing:"0.06em",textTransform:"uppercase"}}>{label}</label>
+    <input value={value} onChange={function(e){onChange(e.target.value)}} type={type} placeholder={placeholder} onFocus={function(){setF(true)}} onBlur={function(){setF(false)}}
+      style={{width:"100%",padding:"12px 14px",borderRadius:12,border:focused?"2px solid #1cb0f6":"2px solid #e5e7eb",borderBottom:focused?"4px solid #1899d6":"4px solid #d1d5db",fontSize:15,fontFamily:"'DM Mono',monospace",outline:"none",background:"#fafafa",transition:"all 0.15s ease",boxSizing:"border-box"}}/>
+  </div>;
+}
+
+function Btn(props){
+  var color=props.color||"#58cc02",shadow=props.shadow||"#46a302",textColor=props.textColor||"#fff",full=props.full;
+  var ps=useState(false),pressed=ps[0],setP=ps[1];
+  return <button onClick={props.onClick} onPointerDown={function(){setP(true)}} onPointerUp={function(){setP(false)}} onPointerLeave={function(){setP(false)}}
+    style={{padding:"14px 24px",borderRadius:14,border:"none",borderBottom:pressed?"2px solid "+shadow:"4px solid "+shadow,background:color,color:textColor,fontSize:14,fontWeight:800,fontFamily:"'Nunito',sans-serif",cursor:"pointer",width:full?"100%":"auto",transform:pressed?"translateY(2px)":"translateY(0)",transition:"all 0.1s ease",letterSpacing:"0.02em"}}>
+    {props.children}
+  </button>;
+}
+
+function LogButton(props){
+  var item=props.item,onClick=props.onClick;
+  var ps=useState(false),p=ps[0],setP=ps[1];
+  return <div onClick={onClick} onPointerDown={function(){setP(true)}} onPointerUp={function(){setP(false)}} onPointerLeave={function(){setP(false)}}
+    style={{background:item.bg,borderRadius:16,padding:"24px 16px",textAlign:"center",cursor:"pointer",border:"2px solid "+item.shadow,borderBottom:p?"2px solid "+item.shadow:"5px solid "+item.shadow,transform:p?"translateY(3px)":"translateY(0)",transition:"all 0.1s ease"}}>
+    <div style={{marginBottom:8}}>{item.icon}</div>
+    <div style={{fontSize:13,fontWeight:800,color:"#fff"}}>{item.label}</div>
+  </div>;
+}
+
+/* ─── main app ─── */
+function App(){
+  var ds=useState(null),data=ds[0],setData=ds[1];
+  var ts=useState("home"),tab=ts[0],setTab=ts[1];
+  var ms=useState(null),modal=ms[0],setModal=ms[1];
+  var fss=useState({}),formState=fss[0],setFormState=fss[1];
+  var cs=useState(false),celebrate=cs[0],setCelebrate=cs[1];
+  var nas=useState(false),notifAsked=nas[0],setNotifAsked=nas[1];
+  var loaded=useRef(false);
+  var mono="'DM Mono',monospace";
+
+  useEffect(function(){if(!loaded.current){loaded.current=true;setData(loadData());};},[]);
+  useEffect(function(){if(data&&loaded.current){saveData(data);scheduleNotifications(data.essentials,data.subscriptions);}},[data]);
+  useEffect(function(){if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js').catch(function(){});}},[]);
+
+  var update=useCallback(function(fn){setData(function(prev){var c={};for(var k in prev)c[k]=prev[k];return fn(c);});},[]);
+  var triggerCelebration=useCallback(function(){setCelebrate(true);},[]);
+  function logAndCelebrate(fn){update(fn);triggerCelebration();}
+  function closeModal(){setFormState({});setModal(null);}
+
+  if(!data)return <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"#f7f7f7"}}><Icons.sparkle size={40} color="#ffc800"/></div>;
+
+  var essTotal=data.essentials.reduce(function(s,e){return s+e.amount;},0);
+  var subsTotal=data.subscriptions.reduce(function(s,e){return s+e.amount;},0);
+  var spentFun=data.transactions.filter(function(t){return t.cat==="fun"}).reduce(function(s,t){return s+t.amount;},0);
+  var totalDebt=data.creditCards.reduce(function(s,c){return s+c.balance;},0);
+  var totalAssets=data.rothBalance+data.hysaBalance+data.brokerageBalance;
+  var netWorth=totalAssets-totalDebt;
+  var funLeft=data.spendingBudget-spentFun;
+  var paydays=getPaydays(today.getFullYear(),today.getMonth());
+  var nextPayday=paydays.find(function(p){return p>=today;})||getPaydays(today.getFullYear(),today.getMonth()+1)[0];
+  var daysToPayday=nextPayday?daysUntil(nextPayday.toISOString()):null;
+  var yearsLeft=data.goalAge-data.currentAge;
+  var monthlyInvest=data.perCheck.roth*2+data.perCheck.hysa*2;
+  var r=0.07/12; var months=Math.round(yearsLeft*12);
+  var projectedFV=totalAssets*Math.pow(1+r,months)+monthlyInvest*((Math.pow(1+r,months)-1)/r);
+  var onTrack=projectedFV>=data.goalAmount;
+  var notifGranted=typeof Notification!=='undefined'&&Notification.permission==='granted';
+
+  var weekDays=[];
+  for(var i=0;i<7;i++){var d=new Date(today);d.setDate(d.getDate()+i);var events=[];
+    data.essentials.forEach(function(e){if(e.dueDay===d.getDate()&&data.paidEssentials.indexOf(e.id)===-1)events.push({name:e.name,amount:e.amount,type:"bill"});});
+    data.subscriptions.forEach(function(s){if((s.dueDay||1)===d.getDate())events.push({name:s.name,amount:s.amount,type:"sub"});});
+    if(nextPayday&&d.toDateString()===nextPayday.toDateString())events.push({name:"Payday",amount:data.income/2,type:"pay"});
+    weekDays.push({date:d,day:DAYS[d.getDay()],num:d.getDate(),isToday:i===0,events:events});
+  }
+
+  var logButtons=[
+    {label:"Fun Spending",cat:"fun",shadow:"#d4a600",bg:"#ffc800",icon:<Icons.party size={28} color="#fff" sw={2}/>},
+    {label:"Roth IRA",cat:"roth",shadow:"#4f46e5",bg:"#6366f1",icon:<Icons.trend size={28} color="#fff" sw={2}/>},
+    {label:"Emergency Fund",cat:"hysa",shadow:"#46a302",bg:"#58cc02",icon:<Icons.shield size={28} color="#fff" sw={2}/>},
+    {label:"Brokerage",cat:"brokerage",shadow:"#0a7a70",bg:"#0d9488",icon:<Icons.piggy size={28} color="#fff" sw={2}/>},
+    {label:"Car Loan",cat:"carloan",shadow:"#d43d3d",bg:"#ff4b4b",icon:<Icons.car size={28} color="#fff" sw={2}/>},
+    {label:"Credit Card",cat:"cc",shadow:"#a855f7",bg:"#ce82ff",icon:<Icons.card size={28} color="#fff" sw={2}/>},
+  ];
+
+  var catLabels={fun:"Fun Money",roth:"Roth IRA",hysa:"Emergency Fund",carloan:"Car Loan",cc:"Credit Card",brokerage:"Brokerage"};
+  var navItems=[{id:"home",icon:Icons.home,label:"Home"},{id:"log",icon:Icons.pen,label:"Log"},{id:"bills",icon:Icons.cal,label:"Bills"},{id:"settings",icon:Icons.gear,label:"Settings"}];
+
+  return <div style={{minHeight:"100vh",background:"#f7f7f7",fontFamily:"'Nunito',sans-serif"}}>
+    <Celebration show={celebrate} onDone={function(){setCelebrate(false)}}/>
+    <div style={{maxWidth:430,margin:"0 auto",padding:"0 16px 100px"}}>
+
+      {tab==="home"&&<div style={{animation:"fadeUp 0.4s ease"}}>
+        <div style={{padding:"28px 0 12px",display:"flex",justifyContent:"space-between",alignItems:"flex-end"}}>
+          <div>
+            <div style={{fontSize:12,fontWeight:800,color:"#afafaf",letterSpacing:"0.08em"}}>{MONTHS[today.getMonth()].toUpperCase()} {today.getFullYear()}</div>
+            <h1 style={{fontSize:30,fontWeight:900,color:"#3c3c3c",letterSpacing:"-0.02em"}}>Overview</h1>
+          </div>
+          {daysToPayday!==null&&<div style={{background:"#e6f9ed",border:"2px solid #b8e6c8",borderBottom:"3px solid #8fd4a4",borderRadius:12,padding:"6px 14px",display:"flex",alignItems:"center",gap:6}}>
+            <Icons.dollar size={14} color="#58cc02" sw={3}/><span style={{fontSize:12,fontWeight:800,color:"#58cc02"}}>Payday in {daysToPayday}d</span>
+          </div>}
+        </div>
+
+        {!notifGranted&&!notifAsked&&typeof Notification!=='undefined'&&<div style={{background:"#e8f4fd",border:"2px solid #b8dff5",borderBottom:"3px solid #8cc8e8",borderRadius:14,padding:"12px 16px",marginBottom:10,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div style={{display:"flex",alignItems:"center",gap:10,flex:1}}><span style={{fontSize:20}}>🔔</span><span style={{fontSize:12,fontWeight:700,color:"#1899d6"}}>Enable notifications for bill reminders</span></div>
+          <div style={{display:"flex",gap:6}}>
+            <div onClick={function(){Notification.requestPermission().then(function(){setNotifAsked(true);if(data)scheduleNotifications(data.essentials,data.subscriptions);});}} style={{background:"#1cb0f6",border:"2px solid #1899d6",borderBottom:"3px solid #1480b8",borderRadius:10,padding:"6px 14px",cursor:"pointer"}}><span style={{fontSize:11,fontWeight:800,color:"#fff"}}>Enable</span></div>
+            <div onClick={function(){setNotifAsked(true)}} style={{padding:"6px 10px",cursor:"pointer",display:"flex",alignItems:"center"}}><Icons.x size={14} color="#afafaf" sw={2.5}/></div>
+          </div>
+        </div>}
+
+        <div style={{background:netWorth>=0?"linear-gradient(135deg,#00cd9c 0%,#00b386 100%)":"linear-gradient(135deg,#ff4b4b 0%,#e63e3e 100%)",borderRadius:20,padding:"28px 24px 24px",marginBottom:10,border:netWorth>=0?"2px solid #00a37a":"2px solid #cc3333",borderBottom:netWorth>=0?"5px solid #008a66":"5px solid #b32d2d",position:"relative",overflow:"hidden"}}>
+          <div style={{position:"absolute",top:-20,right:-20,width:100,height:100,borderRadius:"50%",background:"rgba(255,255,255,0.08)"}}/>
+          <div style={{position:"absolute",bottom:-30,left:20,width:80,height:80,borderRadius:"50%",background:"rgba(255,255,255,0.05)"}}/>
+          <div style={{fontSize:11,fontWeight:800,color:"rgba(255,255,255,0.6)",letterSpacing:"0.1em"}}>NET WORTH</div>
+          <div style={{fontSize:42,fontWeight:900,color:"#fff",fontFamily:mono,marginTop:4,animation:"countUp 0.6s ease",letterSpacing:"-0.02em"}}>{fmt(netWorth)}</div>
+          <div style={{display:"flex",gap:24,marginTop:16}}>
+            <div><div style={{fontSize:10,color:"rgba(255,255,255,0.45)",fontWeight:800,letterSpacing:"0.08em"}}>ASSETS</div><div style={{fontSize:16,color:"rgba(255,255,255,0.7)",fontFamily:mono,fontWeight:700,marginTop:2}}>{fmt(totalAssets)}</div></div>
+            <div><div style={{fontSize:10,color:"rgba(255,255,255,0.45)",fontWeight:800,letterSpacing:"0.08em"}}>DEBTS</div><div style={{fontSize:16,color:"rgba(255,255,255,0.7)",fontFamily:mono,fontWeight:700,marginTop:2}}>{fmt(totalDebt)}</div></div>
+          </div>
+        </div>
+
+        <Card borderColor={onTrack?"#b8e6c8":"#ffd9a0"} shadow={onTrack?"#8fd4a4":"#f0b866"} bg={onTrack?"#f0fdf4":"#fffbf0"} style={{marginBottom:10}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              <div style={{width:36,height:36,borderRadius:10,background:onTrack?"#e6f9ed":"#fff3e0",display:"flex",alignItems:"center",justifyContent:"center"}}><Icons.target size={18} color={onTrack?"#58cc02":"#ff9600"} sw={2.5}/></div>
+              <div><div style={{fontSize:14,fontWeight:800,color:"#3c3c3c"}}>{fmtShort(data.goalAmount)} by {data.goalAge}</div><div style={{fontSize:11,color:"#afafaf",fontWeight:600}}>{yearsLeft.toFixed(1)} years left</div></div>
+            </div>
+            <div style={{background:onTrack?"#58cc02":"#ff9600",borderRadius:10,padding:"5px 12px",borderBottom:onTrack?"2px solid #46a302":"2px solid #e68600"}}><span style={{fontSize:11,fontWeight:800,color:"#fff"}}>{onTrack?"On Track!":"Push Harder!"}</span></div>
+          </div>
+          <div style={{marginTop:14}}><ChunkyBar value={totalAssets} max={data.goalAmount} color={onTrack?"#58cc02":"#ff9600"} bg={onTrack?"#d4edda":"#ffe8cc"}/></div>
+          <div style={{display:"flex",justifyContent:"space-between",marginTop:6}}>
+            <span style={{fontSize:11,fontFamily:mono,color:"#afafaf",fontWeight:600}}>{fmtShort(totalAssets)} saved</span>
+            <span style={{fontSize:11,fontFamily:mono,color:"#afafaf",fontWeight:600}}>Projected: {fmtShort(projectedFV)}</span>
+          </div>
+        </Card>
+
+        <Card style={{marginBottom:10,padding:"14px 12px"}}>
+          <div style={{fontSize:11,fontWeight:800,color:"#afafaf",letterSpacing:"0.06em",marginBottom:10,paddingLeft:6}}>THIS WEEK</div>
+          <div style={{display:"flex",gap:4,overflowX:"auto"}}>
+            {weekDays.map(function(wd,i){return <div key={i} style={{flex:"1 0 auto",minWidth:52,textAlign:"center",padding:"8px 6px 10px",borderRadius:14,background:wd.isToday?"#1cb0f6":wd.events.length>0?"#f0f7ff":"transparent",border:wd.isToday?"2px solid #1899d6":wd.events.length>0?"2px solid #c8dff5":"2px solid transparent",borderBottom:wd.isToday?"3px solid #1480b8":wd.events.length>0?"3px solid #a8c8e8":"none"}}>
+              <div style={{fontSize:10,fontWeight:800,color:wd.isToday?"rgba(255,255,255,0.7)":"#afafaf"}}>{wd.day}</div>
+              <div style={{fontSize:18,fontWeight:900,color:wd.isToday?"#fff":"#3c3c3c",marginTop:2}}>{wd.num}</div>
+              {wd.events.length>0&&<div style={{display:"flex",gap:3,justifyContent:"center",marginTop:4}}>{wd.events.map(function(ev,j){return <div key={j} style={{width:7,height:7,borderRadius:4,background:ev.type==="pay"?"#58cc02":ev.type==="bill"?"#ff4b4b":"#ce82ff"}}/>})}</div>}
+            </div>})}
+          </div>
+          <div style={{display:"flex",gap:16,justifyContent:"center",marginTop:10}}>
+            {[{c:"#58cc02",l:"Pay"},{c:"#ff4b4b",l:"Bill"},{c:"#ce82ff",l:"Sub"}].map(function(x,i){return <div key={i} style={{display:"flex",alignItems:"center",gap:4}}><div style={{width:7,height:7,borderRadius:4,background:x.c}}/><span style={{fontSize:10,fontWeight:700,color:"#afafaf"}}>{x.l}</span></div>})}
+          </div>
+        </Card>
+
+        <Card onClick={function(){setModal("income")}} style={{marginBottom:10}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+            <div style={{display:"flex",alignItems:"center",gap:10}}><div style={{width:36,height:36,borderRadius:10,background:"#eef2ff",display:"flex",alignItems:"center",justifyContent:"center"}}><Icons.dollar size={18} color="#6366f1" sw={2.5}/></div><span style={{fontSize:14,fontWeight:800,color:"#3c3c3c"}}>Monthly Income</span></div>
+            <span style={{fontSize:18,fontWeight:900,fontFamily:mono,color:"#3c3c3c"}}>{fmt(data.income)}</span>
+          </div>
+          <ChunkyBar value={essTotal+subsTotal+spentFun} max={data.income} color="linear-gradient(90deg,#6366f1,#818cf8)" bg="#e0e2ff"/>
+          <div style={{display:"flex",justifyContent:"space-between",marginTop:6}}>
+            <span style={{fontSize:11,color:"#afafaf",fontFamily:mono,fontWeight:600}}>{fmt(essTotal+subsTotal+spentFun)} spent</span>
+            <span style={{fontSize:11,color:"#6366f1",fontWeight:800}}>Tap to edit</span>
+          </div>
+        </Card>
+
+        <div style={{fontSize:11,fontWeight:800,color:"#afafaf",letterSpacing:"0.08em",padding:"8px 0 6px"}}>SAVINGS & GOALS</div>
+        <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:10}}>
+          <StatCard icon={<Icons.trend size={18} color="#6366f1" sw={2.5}/>} iconBg="#eef2ff" label="Roth IRA" current={data.rothYearContributions||0} goal={data.rothGoal} color="linear-gradient(90deg,#6366f1,#a78bfa)" barBg="#e0e2ff" sub={fmt(data.perCheck.roth)+" auto/paycheck · Total: "+fmt(data.rothBalance)} onClick={function(){setModal("roth")}} borderColor="#c7caff" shadow="#a5a8f0"/>
+          <StatCard icon={<Icons.piggy size={18} color="#0d9488" sw={2.5}/>} iconBg="#e6faf7" label="Brokerage" current={data.brokerageBalance} goal={data.brokerageGoal||420000} color="linear-gradient(90deg,#0d9488,#5eead4)" barBg="#ccf0eb" sub={"Total invested: "+fmt(data.brokerageBalance)} onClick={function(){setModal("brokerage")}} borderColor="#a3e0d8" shadow="#7bc8be"/>
+          <StatCard icon={<Icons.shield size={18} color="#58cc02" sw={2.5}/>} iconBg="#e6f9ed" label="Emergency Fund" current={data.hysaBalance} goal={data.hysaGoal} color="linear-gradient(90deg,#58cc02,#7ed957)" barBg="#d4edda" sub={fmt(data.perCheck.hysa)+" auto/paycheck"} onClick={function(){setModal("hysa")}} borderColor="#b8e6c8" shadow="#8fd4a4"/>
+        </div>
+
+        <Card borderColor={funLeft<50?"#ffc0c0":funLeft<150?"#ffd9a0":"#b8e6c8"} shadow={funLeft<50?"#f09090":funLeft<150?"#f0b866":"#8fd4a4"} bg={funLeft<50?"#fff5f5":funLeft<150?"#fffbf0":"#f0fdf4"} style={{marginBottom:10}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+            <div style={{display:"flex",alignItems:"center",gap:10}}><div style={{width:36,height:36,borderRadius:10,background:funLeft<50?"#ffe8e8":funLeft<150?"#fff3e0":"#e6f9ed",display:"flex",alignItems:"center",justifyContent:"center"}}><Icons.party size={18} color={funLeft<50?"#ff4b4b":funLeft<150?"#ff9600":"#58cc02"} sw={2.5}/></div><span style={{fontSize:14,fontWeight:800,color:"#3c3c3c"}}>Fun Money</span></div>
+            <span style={{fontSize:24,fontWeight:900,fontFamily:mono,color:funLeft<50?"#ff4b4b":funLeft<150?"#ff9600":"#58cc02"}}>{fmt(funLeft)}</span>
+          </div>
+          <div style={{fontSize:11,color:"#afafaf",marginBottom:10,marginLeft:46,fontWeight:600}}>left of {fmt(data.spendingBudget)}</div>
+          <ChunkyBar value={spentFun} max={data.spendingBudget} color={funLeft<50?"#ff4b4b":funLeft<150?"#ff9600":"#ffc800"} bg={funLeft<50?"#ffd4d4":funLeft<150?"#ffe8cc":"#fff3cc"}/>
+          {data.transactions.filter(function(t){return t.cat==="fun"}).length>0&&<div style={{marginTop:12}}>
+            {data.transactions.filter(function(t){return t.cat==="fun"}).slice(-3).reverse().map(function(t,i){return <div key={i} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:"1px solid rgba(0,0,0,0.04)"}}><span style={{fontSize:12,color:"#777",fontWeight:600}}>{t.desc}</span><span style={{fontSize:12,fontFamily:mono,color:"#ff4b4b",fontWeight:700}}>-{fmt(t.amount)}</span></div>})}
+          </div>}
+        </Card>
+
+        <div style={{fontSize:11,fontWeight:800,color:"#afafaf",letterSpacing:"0.08em",padding:"8px 0 6px"}}>DEBTS</div>
+        <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:10}}>
+          <DebtCard icon={<Icons.car size={18} color="#ff4b4b" sw={2.5}/>} iconBg="#ffe8e8" label="Car Loan" balance={data.carLoan.balance} extra={data.carLoan.rate+"% APR · "+fmt(541.81)+"/mo"} color="#ff4b4b" onClick={function(){setModal("carloan")}} borderColor="#ffc0c0" shadow="#f09090"/>
+          {data.creditCards.map(function(cc,i){return <DebtCard key={cc.id} icon={<Icons.card size={18} color={cc.balance>1000?"#ff4b4b":cc.balance>0?"#ff9600":"#58cc02"} sw={2.5}/>} iconBg={cc.balance>1000?"#ffe8e8":cc.balance>0?"#fff3e0":"#e6f9ed"} label={cc.name} balance={cc.balance} color={cc.balance>1000?"#ff4b4b":cc.balance>0?"#ff9600":"#58cc02"} onClick={function(){setFormState({cardIdx:i});setModal("cc");}} borderColor={cc.balance>1000?"#ffc0c0":cc.balance>0?"#ffd9a0":"#b8e6c8"} shadow={cc.balance>1000?"#f09090":cc.balance>0?"#f0b866":"#8fd4a4"}/>})}
+        </div>
+      </div>}
+
+      {tab==="bills"&&<div style={{animation:"fadeUp 0.4s ease"}}>
+        <div style={{padding:"28px 0 16px"}}><h1 style={{fontSize:30,fontWeight:900,color:"#3c3c3c"}}>Bills</h1><div style={{fontSize:12,color:"#afafaf",marginTop:2,fontWeight:600}}>Tap to mark as paid</div></div>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+          <div style={{fontSize:11,fontWeight:800,color:"#afafaf",letterSpacing:"0.06em"}}>ESSENTIALS · {fmt(essTotal)}/mo</div>
+          <div onClick={function(){setModal("addEssential")}} style={{fontSize:11,fontWeight:800,color:"#58cc02",cursor:"pointer",padding:"5px 12px",background:"#e6f9ed",borderRadius:10,border:"2px solid #b8e6c8",borderBottom:"3px solid #8fd4a4"}}>+ Add</div>
+        </div>
+        {data.essentials.map(function(e,i){return <BillRow key={e.id} name={e.name} amount={e.amount} dueDay={e.dueDay} paid={data.paidEssentials.indexOf(e.id)!==-1} onToggle={function(){update(function(d){d.paidEssentials=d.paidEssentials.indexOf(e.id)!==-1?d.paidEssentials.filter(function(x){return x!==e.id}):d.paidEssentials.concat([e.id]);return d;})}} onDelete={function(){update(function(d){d.essentials=d.essentials.filter(function(_,idx){return idx!==i});d.paidEssentials=d.paidEssentials.filter(function(x){return x!==e.id});return d;})}}/>})}
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",margin:"16px 0 8px"}}>
+          <div style={{fontSize:11,fontWeight:800,color:"#afafaf",letterSpacing:"0.06em"}}>SUBSCRIPTIONS · {fmt(subsTotal)}/mo</div>
+          <div onClick={function(){setModal("addSub")}} style={{fontSize:11,fontWeight:800,color:"#ce82ff",cursor:"pointer",padding:"5px 12px",background:"#f5eeff",borderRadius:10,border:"2px solid #dcc0ff",borderBottom:"3px solid #c899f0"}}>+ Add</div>
+        </div>
+        {data.subscriptions.map(function(s,i){return <BillRow key={i} name={s.name} amount={s.amount} dueDay={s.dueDay||1} paid={data.paidSubs.indexOf(i)!==-1} onToggle={function(){update(function(d){d.paidSubs=d.paidSubs.indexOf(i)!==-1?d.paidSubs.filter(function(x){return x!==i}):d.paidSubs.concat([i]);return d;})}} onDelete={function(){update(function(d){d.subscriptions=d.subscriptions.filter(function(_,idx){return idx!==i});d.paidSubs=d.paidSubs.filter(function(x){return x!==i}).map(function(x){return x>i?x-1:x});return d;})}}/>})}
+        <Card bg="#eef2ff" borderColor="#c7caff" shadow="#a5a8f0" style={{marginTop:16}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:14,fontWeight:800,color:"#4338ca"}}>Total Monthly Bills</span><span style={{fontSize:18,fontWeight:900,fontFamily:mono,color:"#4338ca"}}>{fmt(essTotal+subsTotal)}</span></div>
+        </Card>
+      </div>}
+
+      {tab==="log"&&<div style={{animation:"fadeUp 0.4s ease"}}>
+        <div style={{padding:"28px 0 16px"}}><h1 style={{fontSize:30,fontWeight:900,color:"#3c3c3c"}}>Log Entry</h1><div style={{fontSize:12,color:"#afafaf",marginTop:2,fontWeight:600}}>What did you do with your money?</div></div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+          {logButtons.map(function(item){return <LogButton key={item.cat} item={item} onClick={function(){setFormState({cat:item.cat});setModal("log");}}/>})}
+        </div>
+        {data.transactions.length>0&&<Card style={{marginTop:16,padding:"16px 18px"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+            <div style={{fontSize:11,fontWeight:800,color:"#afafaf",letterSpacing:"0.06em"}}>TRANSACTION HISTORY</div>
+            <div style={{fontSize:11,fontFamily:mono,color:"#d1d5db",fontWeight:600}}>{data.transactions.length} entries</div>
+          </div>
+          {data.transactions.slice().reverse().map(function(t,i){
+            var realIdx=data.transactions.length-1-i;
+            var isExp=t.cat==="fun",isCC=t.cat==="cc",isCar=t.cat==="carloan",isSav=["roth","hysa","brokerage"].indexOf(t.cat)!==-1;
+            var dotColor=isExp||isCar?"#ff4b4b":isCC?"#1cb0f6":"#58cc02";
+            var amtColor=isExp?"#ff4b4b":isCC?"#1cb0f6":isSav?"#58cc02":isCar?"#ff4b4b":"#777";
+            var prefix=isExp||isCC||isCar?"-":"+";
+            return <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 0",borderBottom:i<data.transactions.length-1?"1px solid #f0f0f0":"none"}}>
+              <div style={{width:10,height:10,borderRadius:5,background:dotColor,flexShrink:0}}/>
+              <div style={{flex:1,minWidth:0}}><div style={{fontSize:13,fontWeight:700,color:"#3c3c3c",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{t.desc}</div><div style={{fontSize:10,color:"#afafaf",fontWeight:600}}>{catLabels[t.cat]} · {new Date(t.date).toLocaleDateString("en-US",{month:"short",day:"numeric"})}</div></div>
+              <span style={{fontSize:14,fontWeight:800,fontFamily:mono,color:amtColor,flexShrink:0}}>{prefix}{fmt(t.amount)}</span>
+              <div onClick={function(){update(function(d){var rm=d.transactions[realIdx];if(rm.cat==="roth"){d.rothBalance-=rm.amount;d.rothYearContributions=Math.max(0,(d.rothYearContributions||0)-rm.amount);}if(rm.cat==="hysa")d.hysaBalance-=rm.amount;if(rm.cat==="brokerage")d.brokerageBalance-=rm.amount;if(rm.cat==="carloan"){var cl={};for(var k in d.carLoan)cl[k]=d.carLoan[k];cl.balance+=rm.amount;d.carLoan=cl;}if(rm.cat==="cc"){var n=rm.desc.replace(" payment","");d.creditCards=d.creditCards.map(function(cc){return cc.name===n?Object.assign({},cc,{balance:cc.balance+rm.amount}):cc;});}d.transactions=d.transactions.filter(function(_,idx){return idx!==realIdx;});return d;});}} style={{width:20,height:20,borderRadius:6,background:"#fff0f0",border:"2px solid #fecaca",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}><Icons.x size={10} color="#ef4444" sw={3}/></div>
+            </div>;
+          })}
+        </Card>}
+      </div>}
+
+      {tab==="settings"&&<div style={{animation:"fadeUp 0.4s ease"}}>
+        <div style={{padding:"28px 0 16px"}}><h1 style={{fontSize:30,fontWeight:900,color:"#3c3c3c"}}>Settings</h1></div>
+        <div style={{fontSize:11,fontWeight:800,color:"#afafaf",letterSpacing:"0.06em",marginBottom:8}}>INCOME & CONTRIBUTIONS</div>
+        {[{label:"Monthly Income",value:fmt(data.income),key:"income"},{label:"Roth / Paycheck",value:fmt(data.perCheck.roth),key:"editRothAuto"},{label:"HYSA / Paycheck",value:fmt(data.perCheck.hysa),key:"editHysaAuto"},{label:"Fun Money Budget",value:fmt(data.spendingBudget),key:"editBudget"}].map(function(item){return <Card key={item.key} onClick={function(){setModal(item.key)}} style={{marginBottom:8,padding:"14px 18px"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:14,fontWeight:800,color:"#3c3c3c"}}>{item.label}</span><div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:14,fontFamily:mono,color:"#777",fontWeight:600}}>{item.value}</span><span style={{color:"#d1d5db",fontSize:18,fontWeight:900}}>›</span></div></div></Card>})}
+        <div style={{fontSize:11,fontWeight:800,color:"#afafaf",letterSpacing:"0.06em",margin:"16px 0 8px"}}>GOALS</div>
+        {[{label:"Target Net Worth",value:fmt(data.goalAmount),key:"editGoal"},{label:"Brokerage Goal",value:fmt(data.brokerageGoal||420000),key:"editBrokerageGoal"},{label:"Current Age",value:data.currentAge.toFixed(1),key:"editAge"},{label:"Goal Age",value:String(data.goalAge),key:"editGoalAge"}].map(function(item){return <Card key={item.key} onClick={function(){setModal(item.key)}} style={{marginBottom:8,padding:"14px 18px"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:14,fontWeight:800,color:"#3c3c3c"}}>{item.label}</span><div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:14,fontFamily:mono,color:"#777",fontWeight:600}}>{item.value}</span><span style={{color:"#d1d5db",fontSize:18,fontWeight:900}}>›</span></div></div></Card>})}
+        <div style={{marginTop:24}}><Btn full color="#ff4b4b" shadow="#d43d3d" onClick={function(){setData(Object.assign({},DEFAULT))}}>Reset All Data</Btn></div>
+      </div>}
+    </div>
+
+    {/* bottom nav */}
+    <div style={{position:"fixed",bottom:0,left:0,right:0,background:"rgba(255,255,255,0.97)",WebkitBackdropFilter:"blur(20px)",backdropFilter:"blur(20px)",borderTop:"2px solid #ebebeb",padding:"6px 0 env(safe-area-inset-bottom,10px)",zIndex:50}}>
+      <div style={{display:"flex",justifyContent:"space-around",maxWidth:430,margin:"0 auto"}}>
+        {navItems.map(function(t){var active=tab===t.id;var Icon=t.icon;return <div key={t.id} onClick={function(){setTab(t.id)}} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2,padding:"6px 18px",cursor:"pointer",borderRadius:12}}>
+          <div style={{width:36,height:36,borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center",background:active?"#1cb0f6":"transparent",border:active?"2px solid #1899d6":"2px solid transparent",borderBottom:active?"3px solid #1480b8":"none",transition:"all 0.15s ease"}}><Icon size={20} color={active?"#fff":"#afafaf"} sw={2.5}/></div>
+          <span style={{fontSize:10,fontWeight:800,color:active?"#1cb0f6":"#afafaf"}}>{t.label}</span>
+        </div>})}
+      </div>
+    </div>
+
+    {/* modals */}
+    {modal==="income"&&<Modal onClose={closeModal}><h3 style={{fontSize:22,fontWeight:900,color:"#3c3c3c",marginBottom:20}}>Update Income</h3><FormInput label="Monthly Take-Home" value={formState.income!==undefined?formState.income:data.income} onChange={function(v){setFormState(Object.assign({},formState,{income:v}))}} type="number"/><div style={{marginTop:6}}><Btn full onClick={function(){update(function(d){d.income=parseFloat(formState.income||d.income);return d;});closeModal();}}>Save</Btn></div></Modal>}
+
+    {modal==="log"&&<Modal onClose={closeModal}>
+      <h3 style={{fontSize:22,fontWeight:900,color:"#3c3c3c",marginBottom:20}}>{({fun:"Log Spending",roth:"Add to Roth",hysa:"Add to Savings",carloan:"Car Payment",cc:"CC Payment",brokerage:"Add to Brokerage"})[formState.cat]}</h3>
+      <FormInput label="Amount" value={formState.amount||""} onChange={function(v){setFormState(Object.assign({},formState,{amount:v}))}} type="number" placeholder="0.00"/>
+      <FormInput label="Note" value={formState.desc||""} onChange={function(v){setFormState(Object.assign({},formState,{desc:v}))}} placeholder={formState.cat==="fun"?"e.g. Sushi dinner":"e.g. Monthly contribution"}/>
+      {formState.cat==="cc"&&<div style={{marginBottom:14}}><label style={{display:"block",fontSize:11,fontWeight:800,color:"#afafaf",marginBottom:8,letterSpacing:"0.04em",textTransform:"uppercase"}}>Which card?</label><div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{data.creditCards.map(function(cc,i){var sel=formState.cardIdx===i;return <button key={i} onClick={function(){setFormState(Object.assign({},formState,{cardIdx:i}))}} style={{padding:"10px 16px",borderRadius:12,fontSize:12,fontWeight:800,cursor:"pointer",border:sel?"2px solid #ce82ff":"2px solid #ebebeb",borderBottom:sel?"3px solid #a855f7":"3px solid #dcdcdc",background:sel?"#f5eeff":"#fff",color:sel?"#7c3aed":"#777",fontFamily:"'Nunito',sans-serif"}}>{cc.name}</button>})}</div></div>}
+      <div style={{marginTop:6}}><Btn full onClick={function(){var amt=parseFloat(formState.amount);if(!amt)return;var desc=formState.desc||"Entry";
+        logAndCelebrate(function(d){d.transactions=d.transactions.concat([{cat:formState.cat,amount:amt,desc:desc,date:new Date().toISOString()}]);
+        if(formState.cat==="roth"){d.rothBalance+=amt;d.rothYearContributions=(d.rothYearContributions||0)+amt;}
+        if(formState.cat==="hysa")d.hysaBalance+=amt;if(formState.cat==="brokerage")d.brokerageBalance+=amt;
+        if(formState.cat==="carloan"){var cl={};for(var k in d.carLoan)cl[k]=d.carLoan[k];cl.balance=Math.max(0,cl.balance-amt);d.carLoan=cl;}
+        if(formState.cat==="cc"&&formState.cardIdx!==undefined){d.creditCards=d.creditCards.map(function(cc,i){return i===formState.cardIdx?Object.assign({},cc,{balance:Math.max(0,cc.balance-amt)}):cc;});}
+        return d;});closeModal();}}>Log Entry</Btn></div>
+    </Modal>}
+
+    {modal==="roth"&&<Modal onClose={closeModal}><h3 style={{fontSize:22,fontWeight:900,color:"#3c3c3c",marginBottom:4}}>Roth IRA</h3><p style={{fontSize:13,color:"#afafaf",marginBottom:20,fontWeight:600}}>This year: {fmt(data.rothYearContributions||0)} of {fmt(data.rothGoal)} · Total: {fmt(data.rothBalance)}</p><FormInput label="Add Amount" value={formState.amount||""} onChange={function(v){setFormState(Object.assign({},formState,{amount:v}))}} type="number" placeholder="0.00"/><div style={{marginTop:6}}><Btn full color="#6366f1" shadow="#4f46e5" onClick={function(){var amt=parseFloat(formState.amount);if(amt)logAndCelebrate(function(d){d.rothBalance+=amt;d.rothYearContributions=(d.rothYearContributions||0)+amt;d.transactions=d.transactions.concat([{cat:"roth",amount:amt,desc:"Manual add",date:new Date().toISOString()}]);return d;});closeModal();}}>Add to Roth</Btn></div></Modal>}
+
+    {modal==="hysa"&&<Modal onClose={closeModal}><h3 style={{fontSize:22,fontWeight:900,color:"#3c3c3c",marginBottom:4}}>Emergency Fund</h3><p style={{fontSize:13,color:"#afafaf",marginBottom:20,fontWeight:600}}>Balance: {fmt(data.hysaBalance)} · Goal: {fmt(data.hysaGoal)}</p><FormInput label="Add Amount" value={formState.amount||""} onChange={function(v){setFormState(Object.assign({},formState,{amount:v}))}} type="number" placeholder="0.00"/><div style={{marginTop:6}}><Btn full onClick={function(){var amt=parseFloat(formState.amount);if(amt)logAndCelebrate(function(d){d.hysaBalance+=amt;d.transactions=d.transactions.concat([{cat:"hysa",amount:amt,desc:"Manual add",date:new Date().toISOString()}]);return d;});closeModal();}}>Add to Fund</Btn></div></Modal>}
+
+    {modal==="brokerage"&&<Modal onClose={closeModal}><h3 style={{fontSize:22,fontWeight:900,color:"#3c3c3c",marginBottom:4}}>Brokerage</h3><p style={{fontSize:13,color:"#afafaf",marginBottom:20,fontWeight:600}}>Balance: {fmt(data.brokerageBalance)} · Goal: {fmt(data.brokerageGoal||420000)}</p><FormInput label="Add Amount" value={formState.amount||""} onChange={function(v){setFormState(Object.assign({},formState,{amount:v}))}} type="number" placeholder="0.00"/><div style={{marginTop:6}}><Btn full color="#0d9488" shadow="#0a7a70" onClick={function(){var amt=parseFloat(formState.amount);if(amt)logAndCelebrate(function(d){d.brokerageBalance+=amt;d.transactions=d.transactions.concat([{cat:"brokerage",amount:amt,desc:"Manual add",date:new Date().toISOString()}]);return d;});closeModal();}}>Add to Brokerage</Btn></div></Modal>}
+
+    {modal==="carloan"&&<Modal onClose={closeModal}><h3 style={{fontSize:22,fontWeight:900,color:"#3c3c3c",marginBottom:4}}>Car Loan</h3><p style={{fontSize:13,color:"#afafaf",marginBottom:20,fontWeight:600}}>Balance: {fmt(data.carLoan.balance)} · {data.carLoan.rate}% APR</p><FormInput label="Payment Amount" value={formState.amount||""} onChange={function(v){setFormState(Object.assign({},formState,{amount:v}))}} type="number" placeholder="0.00"/><div style={{marginTop:6}}><Btn full color="#ff4b4b" shadow="#d43d3d" onClick={function(){var amt=parseFloat(formState.amount);if(amt)logAndCelebrate(function(d){var cl={};for(var k in d.carLoan)cl[k]=d.carLoan[k];cl.balance=Math.max(0,cl.balance-amt);d.carLoan=cl;d.transactions=d.transactions.concat([{cat:"carloan",amount:amt,desc:"Car payment",date:new Date().toISOString()}]);return d;});closeModal();}}>Log Payment</Btn></div></Modal>}
+
+    {modal==="cc"&&<Modal onClose={closeModal}><h3 style={{fontSize:22,fontWeight:900,color:"#3c3c3c",marginBottom:4}}>{(data.creditCards[formState.cardIdx]||{}).name||"Credit Card"}</h3><p style={{fontSize:13,color:"#afafaf",marginBottom:20,fontWeight:600}}>Balance: {fmt((data.creditCards[formState.cardIdx]||{}).balance||0)}</p><FormInput label="Payment Amount" value={formState.amount||""} onChange={function(v){setFormState(Object.assign({},formState,{amount:v}))}} type="number" placeholder="0.00"/><div style={{marginTop:6}}><Btn full color="#ce82ff" shadow="#a855f7" onClick={function(){var amt=parseFloat(formState.amount);var idx=formState.cardIdx;if(amt&&idx!==undefined)logAndCelebrate(function(d){d.creditCards=d.creditCards.map(function(cc,i){return i===idx?Object.assign({},cc,{balance:Math.max(0,cc.balance-amt)}):cc;});d.transactions=d.transactions.concat([{cat:"cc",amount:amt,desc:d.creditCards[idx].name+" payment",date:new Date().toISOString()}]);return d;});closeModal();}}>Log Payment</Btn></div></Modal>}
+
+    {["editRothAuto","editHysaAuto","editBudget","editGoal","editBrokerageGoal","editAge","editGoalAge"].indexOf(modal)!==-1&&<Modal onClose={closeModal}>
+      <h3 style={{fontSize:22,fontWeight:900,color:"#3c3c3c",marginBottom:20}}>{({editRothAuto:"Roth Auto-Contribution",editHysaAuto:"HYSA Auto-Contribution",editBudget:"Fun Money Budget",editGoal:"Target Net Worth",editBrokerageGoal:"Brokerage Goal",editAge:"Current Age",editGoalAge:"Goal Age"})[modal]}</h3>
+      <FormInput label={({editRothAuto:"Amount per paycheck",editHysaAuto:"Amount per paycheck",editBudget:"Monthly budget",editGoal:"Target amount",editBrokerageGoal:"Target amount",editAge:"Your age",editGoalAge:"Target age"})[modal]} value={formState.val||""} onChange={function(v){setFormState({val:v})}} type="number"/>
+      <div style={{marginTop:6}}><Btn full onClick={function(){var v=parseFloat(formState.val);if(!v){closeModal();return;}update(function(d){
+        if(modal==="editRothAuto"){d.perCheck=Object.assign({},d.perCheck,{roth:v});}
+        if(modal==="editHysaAuto"){d.perCheck=Object.assign({},d.perCheck,{hysa:v});}
+        if(modal==="editBudget")d.spendingBudget=v;if(modal==="editGoal")d.goalAmount=v;
+        if(modal==="editBrokerageGoal")d.brokerageGoal=v;if(modal==="editAge")d.currentAge=v;
+        if(modal==="editGoalAge")d.goalAge=v;return d;});closeModal();}}>Save</Btn></div>
+    </Modal>}
+
+    {modal==="addEssential"&&<Modal onClose={closeModal}><h3 style={{fontSize:22,fontWeight:900,color:"#3c3c3c",marginBottom:20}}>Add Essential</h3><FormInput label="Name" value={formState.name||""} onChange={function(v){setFormState(Object.assign({},formState,{name:v}))}} placeholder="e.g. Rent"/><FormInput label="Monthly Amount" value={formState.amount||""} onChange={function(v){setFormState(Object.assign({},formState,{amount:v}))}} type="number" placeholder="0.00"/><FormInput label="Due Day of Month" value={formState.dueDay||""} onChange={function(v){setFormState(Object.assign({},formState,{dueDay:v}))}} type="number" placeholder="1-31"/><div style={{marginTop:6}}><Btn full onClick={function(){var name=formState.name;var amount=parseFloat(formState.amount);var dueDay=parseInt(formState.dueDay);if(!name||!amount||!dueDay)return;update(function(d){var id=name.toLowerCase().replace(/\s+/g,"").slice(0,6)+Date.now();d.essentials=d.essentials.concat([{id:id,name:name,amount:amount,dueDay:dueDay}]);return d;});closeModal();}}>Add Essential</Btn></div></Modal>}
+
+    {modal==="addSub"&&<Modal onClose={closeModal}><h3 style={{fontSize:22,fontWeight:900,color:"#3c3c3c",marginBottom:20}}>Add Subscription</h3><FormInput label="Name" value={formState.name||""} onChange={function(v){setFormState(Object.assign({},formState,{name:v}))}} placeholder="e.g. Spotify"/><FormInput label="Monthly Amount" value={formState.amount||""} onChange={function(v){setFormState(Object.assign({},formState,{amount:v}))}} type="number" placeholder="0.00"/><FormInput label="Due Day of Month" value={formState.dueDay||""} onChange={function(v){setFormState(Object.assign({},formState,{dueDay:v}))}} type="number" placeholder="1-31"/><div style={{marginTop:6}}><Btn full color="#ce82ff" shadow="#a855f7" onClick={function(){var name=formState.name;var amount=parseFloat(formState.amount);var dueDay=parseInt(formState.dueDay);if(!name||!amount||!dueDay)return;update(function(d){d.subscriptions=d.subscriptions.concat([{name:name,amount:amount,dueDay:dueDay}]);return d;});closeModal();}}>Add Subscription</Btn></div></Modal>}
+
+  </div>;
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
